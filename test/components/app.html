@@ -1,0 +1,16 @@
+<route-link :to="{ name: 'home' }" redirect="/home">Home </route-link>|
+<route-link :to="{ name: 'list', params: { author: 'robert' } }">List </route-link>|
+<route-link :to="{ name: 'list.edit', params: { author: 'robert' } }">List Edit </route-link>|
+<route-link :to="{ name: 'list.view', params: { author: 'robert' } }">List View </route-link>|
+<route-link :to="{ name: 'list.view.details', params: { author: 'robert', id: 4 } }">List Details </route-link>|
+<route-link :to="{ name: 'contact' }">Contact </route-link>|
+<route-link :to="{ name: 'about' }">About</route-link>
+
+<hr>
+
+<router-view></router-view>
+
+<script>
+  import router from './router.js';
+	export default { router };
+</script>

@@ -1,0 +1,32 @@
+{
+  "name": "trebor-router",
+  "version": "0.1.0",
+  "description": "The Official router library for TreborJS",
+  "main": "lib/router.esm.js",
+  "scripts": {
+    "build:prod": "rollup -c rollup.config.js --environment BUILD:prod",
+    "build:test": "npm run build:prod && rollup -c rollup.config.js --environment BUILD:test"
+	},
+	"engines": {
+		"node": ">=4"
+	},
+  "devDependencies": {
+    "rollup": "^0.57.1",
+    "rollup-plugin-node-resolve": "^3.3.0",
+    "typescript": "^2.9.2",
+    "trebor": "^0.1.0"
+  },
+  "keywords": [],
+	"author": "InDIOS",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/InDIOS/trebor-router.git"
+	},
+	"license": "MIT",
+	"contributors": [
+		{
+			"email": "robert04siel@gmail.com",
+			"name": "Roberto Asiel Guevara Castañeda"
+		}
+	]
+}

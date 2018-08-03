@@ -1,0 +1,49 @@
+<a $tag="tag" #link @click.prevent="_navigate($event)" :class="[classes, { [activeClass]: _url === _path }]">
+  <slot></slot>
+</a>
+
+<script>
+  import { navigate, generateUrl } from './tools';
+  export default {
+    attrs: {
+      to: {
+        required: true,
+        type: 'string | object'
+      },
+      tag: {
+        default: 'a',
+        type: 'string'
+      },
+      class: {
+        default: '',
+        type: 'string'
+      },
+      activeClass: {
+        type: 'string',
+        default: 'link-active'
+      }
+    },
+    afterMount() {
+      this._classes = this.class;
+      this._url = this.$router.url;
+      this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
+      if (this.tag === 'a') {
+        let { link } = this.$refs;
+        link.setAttribute('href', this._path);
+      }
+      this.$router.onUrlChange(() => {
+        this.$set('_url', this.$router.url);
+      });
+      this.$update();
+    },
+    model: {
+      _url: '',
+      _path: '',
+      _classes: '',
+      _navigate(e) {
+        navigate(this.$router, this._path);
+        this.$fire('click', e);
+      }
+    }
+  };
+</script>

@@ -1,0 +1,11 @@
+<h1>{{ name ? `${name} ` : '' }}Page</h1>
+<p>PATH: <strong>{{ $route.path }}</strong></p>
+<router-view>
+  <span>Default Child</span>
+</router-view>
+
+<script>
+  export default {
+    attrs: ['name']
+  };
+</script>

@@ -1,0 +1,17 @@
+<slot></slot>
+
+<script>
+  export default {
+    attrs: {
+      name: {
+        type: 'string',
+        default: 'default'
+      }
+    },
+    beforeUnmount() {
+      if (this.$slots.default.hasChildNodes() && this.$parent.$hasNext) {
+        this.$slots.default = _$d();
+      }
+    }
+  };
+</script>
