@@ -1,0 +1,11 @@
+.vscode/
+.eslintrc.json
+.gitignore
+.travis.yml
+test/
+tsconfig.json
+tslint.json
+package-lock.json
+*.ts
+*.html
+rollup.config.js
