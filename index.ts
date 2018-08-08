@@ -1,7 +1,7 @@
 // @ts-ignore
-import RouteLink from './route-link.esm';
+import RouteLink from './route-link.es';
 // @ts-ignore
-import RouterView from './router-view.esm';
+import RouterView from './router-view.es';
 import {
 	buildRoute, manageHooks, toPlainRoutes, pathToRegExp, generateUrl,
 	getHashRegExp, clearSlashes, toInternalRoute, navigate, callLeave
