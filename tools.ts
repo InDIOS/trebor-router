@@ -1,6 +1,6 @@
 import Router from './index';
 // @ts-ignore
-import RouterView from './router-view.esm';
+import RouterView from './router-view.es';
 import { Route, InternalRoute, RouteInstance, Component, RouteTransition, Hooks, NavigateParam } from './types';
 
 const ROOT_MATCHER = /^\/$/,
