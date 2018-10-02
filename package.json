@@ -13,13 +13,13 @@
   "node": ">=4"
  },
  "peerDependencies": {
-	 "trebor": "^0.1.1"
+  "trebor": "^0.2.0"
  },
  "devDependencies": {
   "rollup": "^0.64.1",
   "rollup-plugin-node-resolve": "^3.3.0",
   "typescript": "^3.0.1",
-  "trebor": "^0.1.2"
+  "trebor": "^0.2.0"
  },
  "keywords": [],
  "author": "InDIOS",
