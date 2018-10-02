@@ -1,10 +1,10 @@
-import List from './list.es';
-import Page from './page.es';
-import Home from './home.es';
-import About from './about.es';
-import Details from './details.es';
-import Contact from './contact.es';
-import NotFound from './notFound.es';
+import List from './list.html';
+import Page from './page.html';
+import Home from './home.html';
+import About from './about.html';
+import Details from './details.html';
+import Contact from './contact.html';
+import NotFound from './notFound.html';
 import Router from '../../lib/router.esm';
 
 let router = new Router({

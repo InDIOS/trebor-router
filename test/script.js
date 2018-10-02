@@ -4,6 +4,9 @@
     (factory());
 }(this, (function () { 'use strict';
 
+    var PROP_MAP = { p: '__TP__', v: 'value', _: '_value', s: '_subscribers', e: '_events', w: '_watchers', h: 'prototype' };
+    var PROPS = ['$slots', '$refs', '$filters', '$directives', '_events', '_watchers'];
+    var TPS = window[PROP_MAP.p] || (window[PROP_MAP.p] = []);
     var _$assign = Object['assign'] || function (t) {
         for (var s = void 0, i = 1, n = arguments.length; i < n; i++) {
             s = arguments[i];
@@ -15,23 +18,20 @@
     };
     function _$CompCtr(attrs, template, options, parent) {
         var self = this;
-        var props = ['$slots', '$refs', '$filters', '$directives', '_events', '_watchers'];
         var _$set = function (prop, value) { _$def(self, prop, { value: value, writable: true }); };
         if (!attrs)
             attrs = {};
-        _$e(props, function (prop) { _$def(self, prop, { value: {} }); });
+        _$e(PROPS, function (prop) { _$def(self, prop, { value: {} }); });
         _$set('$parent', parent || null);
         _$set('$children', []);
-        _$set('_subscribers', {});
+        _$set(PROP_MAP.s, {});
         _$set('$options', options);
         var opts = self.$options;
         if (!opts.attrs)
             opts.attrs = {};
         if (!opts.children)
             opts.children = {};
-        _$e(_$CompCtr['_plugins'], function (plugin) {
-            plugin.fn.call(self, _$CompCtr, plugin.options);
-        });
+        _$e(TPS, function (plugin) { plugin.fn.call(self, _$CompCtr, plugin.options); });
         if (opts.filters)
             _$assign(self.$filters, opts.filters);
         if (opts.directives)
@@ -39,30 +39,37 @@
         _$e(opts.attrs, function (attrOps, key) {
             _$def(self, (_$isType(key, 'number') ? attrOps : key), {
                 get: function () {
-                    if (_$isType(attrOps, 'string')) {
+                    if (_$isStr(attrOps)) {
                         var value = attrs[attrOps];
-                        return _$isType(value, 'function') ? value() : value;
+                        return _$isFunction(value) ? value() : value;
                     }
                     else {
                         if (!_$hasProp(attrs, key) && attrOps.required) {
-                            console.error("Attribute '" + key + "' must be present because it's required.");
+                            return console.error("Attribute '" + key + "' is required.");
                         }
                         else {
-                            var value = _$isType(attrs[key], 'function') ? attrs[key]() : attrs[key];
+                            var value = _$isFunction(attrs[key]) ? attrs[key]() : attrs[key];
                             if (value === void 0 && _$hasProp(attrOps, 'default')) {
                                 var def = attrOps.default;
-                                value = _$isType(def, 'function') ? def() : def;
+                                value = _$isFunction(def) ? def() : def;
                             }
                             var typ = attrOps.type;
                             if (typ && !_$isType(value, typ) && attrOps.required) {
                                 return console.error("Attribute '" + key + "' must be type '" + typ + "'.");
                             }
-                            return _$toType(value, value === void 0 ? 'undefined' : typ, self, key);
+                            value = _$toType(value, value === void 0 ? 'undefined' : typ, self, key);
+                            if (value !== void 0 && _$hasProp(attrOps, 'validator')) {
+                                var validator = attrOps.validator;
+                                if (_$isFunction(validator) && !validator(value)) {
+                                    return console.error("Assigment '" + key + "'='" + JSON.stringify(value) + "' invalid.");
+                                }
+                            }
+                            return value;
                         }
                     }
                 },
                 set: function () {
-                    console.error("Can not modify attribute '" + key + "' because attributes al read only.");
+                    console.error("'" + key + "' is read only.");
                 },
                 enumerable: true, configurable: true
             });
@@ -120,11 +127,19 @@
             }
         });
     }
-    function _$plugin(fn, options) {
-        _$CompCtr['_plugins'] = _$CompCtr['_plugins'] || [];
-        _$CompCtr['_plugins'].push({ options: options, fn: fn });
+    function _$isValueAttr(attr) {
+        return attr === 'value';
     }
-    _$assign(_$CompCtr.prototype, {
+    function _$subs(dep, listener) {
+        if (!this[PROP_MAP.s][dep]) {
+            this[PROP_MAP.s][dep] = [];
+        }
+        return this[PROP_MAP.s][dep].push(listener.bind(this)) - 1;
+    }
+    function _$def(obj, key, desc) {
+        Object.defineProperty(obj, key, desc);
+    }
+    _$assign(_$CompCtr[PROP_MAP.h], {
         $get: function (path) {
             return _$accesor(this, path);
         },
@@ -133,13 +148,13 @@
         },
         $on: function (event, handler) {
             var _this = this;
-            if (!this._events[event]) {
-                this._events[event] = [];
+            if (!this[PROP_MAP.e][event]) {
+                this[PROP_MAP.e][event] = [];
             }
-            var i = this._events[event].push(handler);
+            var i = this[PROP_MAP.e][event].push(handler);
             return {
                 $off: function () {
-                    _this._events[event].splice(i - 1, 1);
+                    _this[PROP_MAP.e][event].splice(i - 1, 1);
                 }
             };
         },
@@ -150,13 +165,13 @@
             });
         },
         $fire: function (event, data) {
-            if (this._events[event]) {
-                _$e(this._events[event], function (handler) { handler(data); });
+            if (this[PROP_MAP.e][event]) {
+                _$e(this[PROP_MAP.e][event], function (handler) { handler(data); });
             }
         },
         $notify: function (key) {
-            if (this._subscribers[key]) {
-                _$e(this._subscribers[key], function (suscriber) { suscriber(); });
+            if (this[PROP_MAP.s][key]) {
+                _$e(this[PROP_MAP.s][key], function (suscriber) { suscriber(); });
             }
         },
         $observe: function (deps, listener) {
@@ -173,25 +188,25 @@
             return {
                 $unobserve: function () {
                     _$e(subs, function (sub) {
-                        _this._subscribers[sub.sub].splice(sub.i, 1);
+                        _this[PROP_MAP.s][sub.sub].splice(sub.i, 1);
                     });
                 }
             };
         },
         $watch: function (key, watcher) {
             var _this = this;
-            if (!this._watchers[key]) {
-                this._watchers[key] = [];
+            if (!this[PROP_MAP.w][key]) {
+                this[PROP_MAP.w][key] = [];
             }
-            var i = this._watchers[key].push(watcher.bind(this));
+            var i = this[PROP_MAP.w][key].push(watcher.bind(this));
             return {
                 $unwatch: function () {
-                    _this._watchers[key].splice(i - 1, 1);
+                    _this[PROP_MAP.w][key].splice(i - 1, 1);
                 }
             };
         }
     });
-    var array = Array.prototype;
+    var array = Array[PROP_MAP.h];
     function _$toArgs(args, start) {
         if (start === void 0) { start = 0; }
         return array.slice.call(args, start);
@@ -213,10 +228,9 @@
         desc.writable = true;
         _$def(self, 'length', _$assign({ value: self.length }, desc));
     }
-    _$List.prototype = Object.create(array);
-    _$List.prototype.constructor = _$List;
+    _$extends(_$List, Array);
     ['pop', 'push', 'reverse', 'shift', 'sort', 'fill', 'unshift', 'splice'].forEach(function (method) {
-        _$List.prototype[method] = function () {
+        _$List[PROP_MAP.h][method] = function () {
             var self = this;
             var old = self.slice();
             var result;
@@ -231,7 +245,7 @@
             return result;
         };
     });
-    _$List.prototype.pull = function (index) {
+    _$List[PROP_MAP.h].pull = function (index) {
         var self = this;
         var items = _$toArgs(arguments, 1);
         var length = self.length;
@@ -251,13 +265,20 @@
     };
     function _$dispatch(root, key, oldVal, value) {
         root.$notify(key);
-        if (root._watchers[key]) {
-            _$e(root._watchers[key], function (watcher) { watcher(oldVal, value); });
+        if (root[PROP_MAP.w][key]) {
+            _$e(root[PROP_MAP.w][key], function (watcher) { watcher(oldVal, value); });
         }
         root.$update();
     }
+    function _$extends(ctor, exts) {
+        ctor['plugin'] = function (fn, options) {
+            TPS.push({ options: options, fn: fn });
+        };
+        ctor[PROP_MAP.h] = Object.create(exts[PROP_MAP.h]);
+        ctor[PROP_MAP.h].constructor = ctor;
+    }
     function _$isType(value, type) {
-        return _$type(type) === 'string' ? type.split('\|').some(function (t) { return t.trim() === _$type(value); }) : value instanceof type;
+        return _$type(type) === 'string' ? type.split('|').some(function (t) { return t.trim() === _$type(value); }) : value instanceof type;
     }
     function _$isObject(obj) {
         return _$isType(obj, 'object');
@@ -265,16 +286,22 @@
     function _$isArray(obj) {
         return Array.isArray ? Array.isArray(obj) : _$isType(obj, 'array');
     }
+    function _$isFunction(obj) {
+        return _$isType(obj, 'function');
+    }
+    function _$isStr(obj) {
+        return _$isType(obj, 'string');
+    }
     function _$toType(value, type, root, key) {
         switch (type) {
             case 'date':
                 return new Date(value);
             case 'string':
-                return value.toString();
+                return _$toStr(value);
             case 'number':
                 return +value;
             case 'boolean':
-                return !!value;
+                return _$isStr(value) && !value ? true : !!value;
             case 'array':
                 return _$isType(value, _$List) ? value : new _$List(value, root, key);
             default:
@@ -282,13 +309,13 @@
         }
     }
     function _$type(obj) {
-        return /\[object (\w+)\]/.exec(Object.prototype.toString.call(obj))[1].toLowerCase();
+        return / (\w+)/.exec(({}).toString.call(obj))[1].toLowerCase();
     }
     function _$hasProp(obj, prop) {
         return obj.hasOwnProperty(prop);
     }
-    function _$drt(directive) {
-        var hasProp = function (prop, instance, options, element) { return _$isObject(directive) && directive[prop] && directive[prop](instance, options, element); };
+    function _$drt(dd) {
+        var hasProp = function (prop, instance, options, element) { return _$isObject(dd) && dd[prop] && dd[prop](instance, options, element); };
         return {
             $init: function (instance, options, element) {
                 hasProp('$init', instance, options, element);
@@ -297,8 +324,8 @@
                 hasProp('$inserted', instance, options, element);
             },
             $update: function (instance, options, element) {
-                if (_$isType(directive, 'function')) {
-                    directive(instance, options, element);
+                if (_$isFunction(dd)) {
+                    dd(instance, options, element);
                 }
                 else {
                     hasProp('$update', instance, options, element);
@@ -310,8 +337,13 @@
         };
     }
     function _$noop() { }
-    function _$add(inst, child) {
-        inst.$children.push(child);
+    function _$add(inst, Child, attrs) {
+        var child = null;
+        if (Child) {
+            child = new Child(attrs, inst);
+            inst.$children.push(child);
+        }
+        return child;
     }
     function _$toStr(obj) {
         var str = _$type(obj);
@@ -320,7 +352,7 @@
     function _$toPlainObj(obj) {
         var data = {};
         _$e(_$isObject(obj) ? obj : {}, function (_v, k) {
-            if (k[0] !== '$' && !_$isType(obj[k], 'function')) {
+            if (k[0] !== '$' && !_$isFunction(obj[k])) {
                 if (_$isType(obj[k], _$List)) {
                     data[k] = obj[k].map(_$toPlainObj);
                 }
@@ -337,16 +369,9 @@
     function _$setRef(obj, prop) {
         var value = [];
         _$def(obj, prop, {
-            get: function () {
-                return value.length <= 1 ? value[0] : value;
-            },
-            set: function (val) {
-                if (val && !~value.indexOf(val)) {
-                    value.push(val);
-                }
-            },
-            enumerable: true,
-            configurable: true
+            get: function () { return value.length <= 1 ? value[0] : value; },
+            set: function (val) { val && !~value.indexOf(val) && value.push(val); },
+            enumerable: true, configurable: true
         });
     }
     function _$accesor(object, path, value) {
@@ -359,7 +384,7 @@
             }
             else {
                 if (i === arr.length - 1) {
-                    if (_$isType(obj, _$List) && (+key).toString() === key) {
+                    if (_$isType(obj, _$List) && _$toStr(+key) === key) {
                         obj.pull(+key, value);
                     }
                     else {
@@ -375,17 +400,8 @@
             return obj ? obj[key] : null;
         }, object);
     }
-    function _$subs(dep, listener) {
-        if (!this._subscribers[dep]) {
-            this._subscribers[dep] = [];
-        }
-        return this._subscribers[dep].push(listener.bind(this)) - 1;
-    }
-    function _$def(obj, key, desc) {
-        Object.defineProperty(obj, key, desc);
-    }
     function _$(selector, parent) {
-        return _$isType(selector, 'string') ? (parent || document).querySelector(selector) : selector;
+        return _$isStr(selector) ? (parent || document).querySelector(selector) : selector;
     }
     function _$d() {
         return document.createDocumentFragment();
@@ -399,8 +415,7 @@
             parent.insertBefore(child, sibling);
     }
     function _$as(source, dest) {
-        var childNodes = source.childNodes;
-        var attributes = source.attributes;
+        var childNodes = source.childNodes, attributes = source.attributes;
         for (var i = 0; i < childNodes.length; i++) {
             _$a(dest, childNodes[i]);
         }
@@ -417,11 +432,17 @@
     function _$ct(content) {
         return document.createTextNode(content || '');
     }
-    function _$sa(el, attr, value) {
-        el.setAttribute(attr, value);
+    function _$sa(el, attrOrBind) {
+        var attr = attrOrBind[0], value = attrOrBind[1];
+        el.setAttribute(attr, _$toStr(value));
+        if (_$isValueAttr(attr) && !_$isStr(value))
+            el[PROP_MAP._] = value;
     }
     function _$ga(el, attr) {
-        return el.getAttribute(attr);
+        return _$isValueAttr(attr) ? _$gv(el) : el.getAttribute(attr);
+    }
+    function _$gv(el) {
+        return _$hasProp(el, PROP_MAP._) ? el[PROP_MAP._] : el[PROP_MAP.v];
     }
     function _$al(el, event, handler) {
         el.addEventListener(event, handler, false);
@@ -436,7 +457,7 @@
     }
     function _$bc(value) {
         var classes = '';
-        if (_$isType(value, 'string')) {
+        if (_$isStr(value)) {
             classes += " " + value;
         }
         else if (_$isArray(value)) {
@@ -449,6 +470,22 @@
         }
         return classes.trim();
     }
+    function _$bu(el, binding) {
+        var attr = binding[0], value = binding[1];
+        var _value = attr === 'checked' ? !!value : _$toStr(value);
+        if (/value|checked/.test(attr)) {
+            if (el[attr] !== _value)
+                el[attr] = _$isValueAttr(attr) ? _value : value;
+            el[PROP_MAP._] = _$isValueAttr(attr) ? value : el[PROP_MAP.v];
+        }
+        else if (_$ga(el, attr) !== _value) {
+            _$sa(el, [attr, _value]);
+        }
+    }
+    function _$tu(text, value) {
+        if (text.data !== (value = _$toStr(value)))
+            text.data = value;
+    }
     function _$e(obj, cb) {
         for (var key in obj) {
             if (_$hasProp(obj, key)) {
@@ -458,51 +495,49 @@
     }
 
     function _$tplList(_$state, children) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, strong_1, txt_3, setTxt_3, routerViewAnchor_1, routerView_1;
+      var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2, routerViewAnchor_1, routerView_1;
       _$frag = _$d();
-      setTxt_3 = function (_$state) {
+      setTxt_2 = function(_$state) {
         return _$state.$route.path;
       };
       var RouterView = children['router-view'] || window['RouterView'];
       routerViewAnchor_1 = _$ct();
-      routerView_1 = new RouterView({}, _$state);
-      _$add(_$state, routerView_1);
+      routerView_1 = _$add(_$state, RouterView, {});
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('List Page');
+          h1_1.innerHTML = 'List Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct('You are in page ');
+          txt_1 = _$ct('You are in page ');
           strong_1 = _$ce('strong');
-          txt_3 = _$ct();
-          txt_3.data = setTxt_3(_$state);
+          txt_2 = _$ct();
+          txt_2.data = setTxt_2(_$state);
           routerView_1.$create();
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_2, setTxt_2(_$state));
           routerView_1 && routerView_1.$update();
         },
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
-          _$a(strong_1, txt_3);
+          _$a(p_1, txt_1);
+          _$a(strong_1, txt_2);
           _$a(p_1, strong_1);
           _$a(_$frag, p_1);
           _$a(_$frag, routerViewAnchor_1);
           routerView_1.$mount(_$frag, routerViewAnchor_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -510,7 +545,7 @@
           this.$children.splice(0, this.$children.length);
           routerView_1 && routerView_1.$destroy();
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = routerViewAnchor_1 = routerView_1 = void 0;
+          _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = routerViewAnchor_1 = routerView_1 = void 0;
         }
       };
     }
@@ -518,28 +553,25 @@
       _$CompCtr.call(this, _$attrs, _$tplList, {}, _$parent);
       !_$parent && this.$create();
     }
-    List.plugin = _$plugin;
-    List.prototype = Object.create(_$CompCtr.prototype);
-    List.prototype.constructor = List;
+    _$extends(List, _$CompCtr);
 
     function _$tplPage(_$state, children) {
       var _$frag, h1_1, txt_1, setTxt_1, p_1, txt_2, strong_1, txt_3, setTxt_3, routerViewAnchor_1, routerView_1, span_1, txt_4;
       _$frag = _$d();
-      setTxt_1 = function (_$state) {
-        return (('name' in _$state ? _$state.name : name) ? ('name' in _$state ? _$state.name : name) + ' ' : '') + 'Page';
+      setTxt_1 = function() {
+        return (name ? name + ' ' : '') + 'Page';
       };
-      setTxt_3 = function (_$state) {
+      setTxt_3 = function(_$state) {
         return _$state.$route.path;
       };
       var RouterView = children['router-view'] || window['RouterView'];
       routerViewAnchor_1 = _$ct();
-      routerView_1 = new RouterView({}, _$state);
-      _$add(_$state, routerView_1);
+      routerView_1 = _$add(_$state, RouterView, {});
       if (routerView_1.$slots['default'] && routerView_1.$slots['default'].childNodes.length !== 0) {
         routerView_1.$slots['default'] = _$d();
       }
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
           txt_1 = _$ct();
           txt_1.data = setTxt_1(_$state);
@@ -552,26 +584,21 @@
           span_1 = _$ce('span');
           txt_4 = _$ct('Default Child');
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_1 = setTxt_1(_$state);
-          if (txt_1.data !== _$toStr(updateTxt_1)) {
-            txt_1.data = updateTxt_1;
-          }
-          updateTxt_1 = void 0;
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_1, setTxt_1(_$state));
+          _$tu(txt_3, setTxt_3(_$state));
           routerView_1 && routerView_1.$update();
         },
-        $unmount: function () {
+
+        $unmount: function() {
           _$a(h1_1, txt_1);
           _$a(_$frag, h1_1);
           _$a(p_1, txt_2);
@@ -585,7 +612,8 @@
           }
           routerView_1.$mount(_$frag, routerViewAnchor_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -598,58 +626,57 @@
       };
     }
     function Page(_$attrs, _$parent) {
-      _$CompCtr.call(this, _$attrs, _$tplPage, { attrs: ['name'] }, _$parent);
+      _$CompCtr.call(this, _$attrs, _$tplPage, {
+        attrs: ['name']
+      }, _$parent);
       !_$parent && this.$create();
     }
-    Page.plugin = _$plugin;
-    Page.prototype = Object.create(_$CompCtr.prototype);
-    Page.prototype.constructor = Page;
+    _$extends(Page, _$CompCtr);
 
     function _$tplHome(_$state) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, strong_1, txt_3, setTxt_3;
+      var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2;
       _$frag = _$d();
-      setTxt_3 = function (_$state) {
+      setTxt_2 = function(_$state) {
         return _$state.$route.path;
       };
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('Home Page');
+          h1_1.innerHTML = 'Home Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct('You are in page ');
+          txt_1 = _$ct('You are in page ');
           strong_1 = _$ce('strong');
-          txt_3 = _$ct();
-          txt_3.data = setTxt_3(_$state);
+          txt_2 = _$ct();
+          txt_2.data = setTxt_2(_$state);
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_2, setTxt_2(_$state));
         },
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
-          _$a(strong_1, txt_3);
+          _$a(p_1, txt_1);
+          _$a(strong_1, txt_2);
           _$a(p_1, strong_1);
           _$a(_$frag, p_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
           this.$siblingEl = null;
           this.$children.splice(0, this.$children.length);
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = void 0;
+          _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
       };
     }
@@ -657,55 +684,52 @@
       _$CompCtr.call(this, _$attrs, _$tplHome, {}, _$parent);
       !_$parent && this.$create();
     }
-    Home.plugin = _$plugin;
-    Home.prototype = Object.create(_$CompCtr.prototype);
-    Home.prototype.constructor = Home;
+    _$extends(Home, _$CompCtr);
 
     function _$tplAbout(_$state) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, strong_1, txt_3, setTxt_3;
+      var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2;
       _$frag = _$d();
-      setTxt_3 = function (_$state) {
+      setTxt_2 = function(_$state) {
         return _$state.$route.path;
       };
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('About Page');
+          h1_1.innerHTML = 'About Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct('You are in page ');
+          txt_1 = _$ct('You are in page ');
           strong_1 = _$ce('strong');
-          txt_3 = _$ct();
-          txt_3.data = setTxt_3(_$state);
+          txt_2 = _$ct();
+          txt_2.data = setTxt_2(_$state);
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_2, setTxt_2(_$state));
         },
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
-          _$a(strong_1, txt_3);
+          _$a(p_1, txt_1);
+          _$a(strong_1, txt_2);
           _$a(p_1, strong_1);
           _$a(_$frag, p_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
           this.$siblingEl = null;
           this.$children.splice(0, this.$children.length);
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = void 0;
+          _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
       };
     }
@@ -713,55 +737,52 @@
       _$CompCtr.call(this, _$attrs, _$tplAbout, {}, _$parent);
       !_$parent && this.$create();
     }
-    About.plugin = _$plugin;
-    About.prototype = Object.create(_$CompCtr.prototype);
-    About.prototype.constructor = About;
+    _$extends(About, _$CompCtr);
 
     function _$tplDetails(_$state) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, strong_1, txt_3, setTxt_3;
+      var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2;
       _$frag = _$d();
-      setTxt_3 = function (_$state) {
+      setTxt_2 = function(_$state) {
         return _$state.$route.path;
       };
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('Details Page');
+          h1_1.innerHTML = 'Details Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct('You are in page ');
+          txt_1 = _$ct('You are in page ');
           strong_1 = _$ce('strong');
-          txt_3 = _$ct();
-          txt_3.data = setTxt_3(_$state);
+          txt_2 = _$ct();
+          txt_2.data = setTxt_2(_$state);
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_2, setTxt_2(_$state));
         },
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
-          _$a(strong_1, txt_3);
+          _$a(p_1, txt_1);
+          _$a(strong_1, txt_2);
           _$a(p_1, strong_1);
           _$a(_$frag, p_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
           this.$siblingEl = null;
           this.$children.splice(0, this.$children.length);
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = void 0;
+          _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
       };
     }
@@ -769,55 +790,52 @@
       _$CompCtr.call(this, _$attrs, _$tplDetails, {}, _$parent);
       !_$parent && this.$create();
     }
-    Details.plugin = _$plugin;
-    Details.prototype = Object.create(_$CompCtr.prototype);
-    Details.prototype.constructor = Details;
+    _$extends(Details, _$CompCtr);
 
     function _$tplContact(_$state) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, strong_1, txt_3, setTxt_3;
+      var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2;
       _$frag = _$d();
-      setTxt_3 = function (_$state) {
+      setTxt_2 = function(_$state) {
         return _$state.$route.path;
       };
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('Contact Page');
+          h1_1.innerHTML = 'Contact Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct('You are in page ');
+          txt_1 = _$ct('You are in page ');
           strong_1 = _$ce('strong');
-          txt_3 = _$ct();
-          txt_3.data = setTxt_3(_$state);
+          txt_2 = _$ct();
+          txt_2.data = setTxt_2(_$state);
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
-          var updateTxt_3 = setTxt_3(_$state);
-          if (txt_3.data !== _$toStr(updateTxt_3)) {
-            txt_3.data = updateTxt_3;
-          }
-          updateTxt_3 = void 0;
+
+        $update: function(_$state) {
+          _$tu(txt_2, setTxt_2(_$state));
         },
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
-          _$a(strong_1, txt_3);
+          _$a(p_1, txt_1);
+          _$a(strong_1, txt_2);
           _$a(p_1, strong_1);
           _$a(_$frag, p_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
           this.$siblingEl = null;
           this.$children.splice(0, this.$children.length);
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = void 0;
+          _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
       };
     }
@@ -825,47 +843,44 @@
       _$CompCtr.call(this, _$attrs, _$tplContact, {}, _$parent);
       !_$parent && this.$create();
     }
-    Contact.plugin = _$plugin;
-    Contact.prototype = Object.create(_$CompCtr.prototype);
-    Contact.prototype.constructor = Contact;
+    _$extends(Contact, _$CompCtr);
 
     function _$tplNotFound(_$state) {
-      var _$frag, h1_1, txt_1, p_1, txt_2, button_1, txt_3, clickEvent_1, handlerClickEvent_1;
+      var _$frag, h1_1, p_1, button_1, txt_1, clickEvent_1, handlerClickEvent_1;
       _$frag = _$d();
-      clickEvent_1 = function (_$state) {
+      clickEvent_1 = function(_$state) {
         _$state.$route.back();
       };
       return {
-        $create: function () {
+        $create: function() {
           h1_1 = _$ce('h1');
-          txt_1 = _$ct('Not Found Page');
+          h1_1.innerHTML = 'Not Found Page';
           p_1 = _$ce('p');
-          txt_2 = _$ct(' Somthing was wrong. ');
+          p_1.innerHTML = '\n  Somthing was wrong.\n';
           button_1 = _$ce('button');
-          txt_3 = _$ct('Go Back');
-          this.$hydrate();
-        },
-        $hydrate: function () {
-          _$al(button_1, 'click', handlerClickEvent_1 = function (event) {
+          txt_1 = _$ct('Go Back');
+          _$al(button_1, 'click', handlerClickEvent_1 = function(event) {
             clickEvent_1(_$state, event, button_1);
           });
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
+
         $update: _$noop,
-        $unmount: function () {
-          _$a(h1_1, txt_1);
+
+        $unmount: function() {
           _$a(_$frag, h1_1);
-          _$a(p_1, txt_2);
           _$a(_$frag, p_1);
-          _$a(button_1, txt_3);
+          _$a(button_1, txt_1);
           _$a(_$frag, button_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -873,7 +888,7 @@
           this.$children.splice(0, this.$children.length);
           _$rl(button_1, 'click', handlerClickEvent_1);
           delete _$state.$root;
-          _$frag = h1_1 = txt_1 = p_1 = txt_2 = button_1 = txt_3 = clickEvent_1 = handlerClickEvent_1 = void 0;
+          _$frag = h1_1 = p_1 = button_1 = txt_1 = clickEvent_1 = handlerClickEvent_1 = void 0;
         }
       };
     }
@@ -881,9 +896,7 @@
       _$CompCtr.call(this, _$attrs, _$tplNotFound, {}, _$parent);
       !_$parent && this.$create();
     }
-    NotFound.plugin = _$plugin;
-    NotFound.prototype = Object.create(_$CompCtr.prototype);
-    NotFound.prototype.constructor = NotFound;
+    _$extends(NotFound, _$CompCtr);
 
     function _$tplRouterView(_$state) {
       var _$frag;
@@ -891,17 +904,21 @@
       _$state.$slots['default'] = _$d();
       return {
         $create: _$noop,
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
+
         $update: _$noop,
-        $unmount: function () {
+
+        $unmount: function() {
           _$a(_$frag, _$state.$slots['default']);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -920,7 +937,8 @@
             default: 'default'
           }
         },
-        beforeUnmount: function () {
+
+        beforeUnmount: function() {
           if (this.$slots.default.hasChildNodes() && this.$parent.$hasNext) {
             this.$slots.default = _$d();
           }
@@ -928,9 +946,7 @@
       }, _$parent);
       !_$parent && this.$create();
     }
-    RouterView.plugin = _$plugin;
-    RouterView.prototype = Object.create(_$CompCtr.prototype);
-    RouterView.prototype.constructor = RouterView;
+    _$extends(RouterView, _$CompCtr);
 
     var ROOT_MATCHER = /^\/$/, PATH_REPLACER = '([^\/\\?]+)', PATH_NAME_MATCHER = /:([\w\d]+)/g, PATH_EVERY_MATCHER = /\/\*(?!\*)/, PATH_EVERY_REPLACER = '\/([^\/\\?]+)', PATH_EVERY_GLOBAL_MATCHER = /\*{2}/, PATH_EVERY_GLOBAL_REPLACER = '(.*?)\\??', LEADING_BACKSLASHES_MATCH = /\/*$/;
     function clearSlashes(path) {
@@ -1140,62 +1156,59 @@
     function _$tplRouteLink(_$state) {
       var _$frag, _$node_1, setTag_$node_1, _refs, clickEvent_1, handlerClickEvent_1, bindClass_$node_1;
       _$frag = _$d();
-      setTag_$node_1 = function (_$state) {
+      setTag_$node_1 = function(_$state) {
         return _$state.tag;
       };
       _$state.$slots['default'] = _$d();
       _refs = _$state.$refs;
-      clickEvent_1 = function (_$state, $event) {
+      clickEvent_1 = function(_$state, $event) {
         _$state._navigate($event);
       };
-      bindClass_$node_1 = function (_$state) {
+      bindClass_$node_1 = function(_$state) {
         var _a;
-        return _$bc([
+        return ['class', _$bc([
           _$state.classes,
           (_a = {}, _a[_$state.activeClass] = _$state._url === _$state._path, _a)
-        ]).trim();
+        ]).trim()];
       };
       return {
-        $create: function () {
+        $create: function() {
           _$node_1 = _$ce(setTag_$node_1(_$state));
           !_refs['link'] && _$setRef(_refs, 'link');
           _refs['link'] = _$node_1;
-          this.$hydrate();
-        },
-        $hydrate: function () {
-          _$al(_$node_1, 'click', handlerClickEvent_1 = function (event) {
+          _$al(_$node_1, 'click', handlerClickEvent_1 = function(event) {
             event.preventDefault();
             clickEvent_1(_$state, event, _$node_1);
           });
-          _$sa(_$node_1, 'class', _$toStr(bindClass_$node_1(_$state)));
+          _$sa(_$node_1, bindClass_$node_1(_$state));
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function (_$state) {
+
+        $update: function(_$state) {
           var updateTag_$node_1 = setTag_$node_1(_$state);
           if (updateTag_$node_1.toUpperCase() !== _$node_1.tagName) {
             _$node_1 = _$as(_$node_1, _$ce(updateTag_$node_1));
           }
           updateTag_$node_1 = void 0;
-          handlerClickEvent_1 = _$ul(_$node_1, 'click', handlerClickEvent_1, function (event) {
+          handlerClickEvent_1 = _$ul(_$node_1, 'click', handlerClickEvent_1, function(event) {
             event.preventDefault();
             clickEvent_1(_$state, event, _$node_1);
           });
-          var updateClass_$node_1 = _$toStr(bindClass_$node_1(_$state));
-          if (_$ga(_$node_1, 'class') !== updateClass_$node_1) {
-            _$sa(_$node_1, 'class', updateClass_$node_1);
-          }
-          updateClass_$node_1 = void 0;
+          _$bu(_$node_1, bindClass_$node_1(_$state));
         },
-        $unmount: function () {
+
+        $unmount: function() {
           _$a(_$node_1, _$state.$slots['default']);
           _$a(_$frag, _$node_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -1220,20 +1233,24 @@
             required: true,
             type: 'string | object'
           },
+
           tag: {
             default: 'a',
             type: 'string'
           },
+
           class: {
             default: '',
             type: 'string'
           },
+
           activeClass: {
             type: 'string',
             default: 'link-active'
           }
         },
-        afterMount: function () {
+
+        afterMount: function() {
           var _this = this;
           this._classes = this.class;
           this._url = this.$router.url;
@@ -1242,16 +1259,18 @@
             var link = this.$refs.link;
             link.setAttribute('href', this._path);
           }
-          this.$router.onUrlChange(function () {
+          this.$router.onUrlChange(function() {
             _this.$set('_url', _this.$router.url);
           });
           this.$update();
         },
+
         model: {
           _url: '',
           _path: '',
           _classes: '',
-          _navigate: function (e) {
+
+          _navigate: function(e) {
             navigate(this.$router, this._path);
             this.$fire('click', e);
           }
@@ -1259,9 +1278,7 @@
       }, _$parent);
       !_$parent && this.$create();
     }
-    RouteLink.plugin = _$plugin;
-    RouteLink.prototype = Object.create(_$CompCtr.prototype);
-    RouteLink.prototype.constructor = RouteLink;
+    _$extends(RouteLink, _$CompCtr);
 
     var Router = (function () {
         function Router(options) {
@@ -1547,97 +1564,106 @@
       _$frag = _$d();
       var RouteLink = children['route-link'] || window['RouteLink'];
       routeLinkAnchor_1 = _$ct();
-      routeLink_1 = new RouteLink({
-        to: function () {
-          return { name: 'home' };
+      routeLink_1 = _$add(_$state, RouteLink, {
+        to: function() {
+          return {
+            name: 'home'
+          };
         },
+
         redirect: '/home'
-      }, _$state);
-      _$add(_$state, routeLink_1);
+      });
       if (routeLink_1.$slots['default'] && routeLink_1.$slots['default'].childNodes.length !== 0) {
         routeLink_1.$slots['default'] = _$d();
       }
       routeLinkAnchor_2 = _$ct();
-      routeLink_2 = new RouteLink({
-        to: function () {
+      routeLink_2 = _$add(_$state, RouteLink, {
+        to: function() {
           return {
             name: 'list',
-            params: { author: 'robert' }
+
+            params: {
+              author: 'robert'
+            }
           };
         }
-      }, _$state);
-      _$add(_$state, routeLink_2);
+      });
       if (routeLink_2.$slots['default'] && routeLink_2.$slots['default'].childNodes.length !== 0) {
         routeLink_2.$slots['default'] = _$d();
       }
       routeLinkAnchor_3 = _$ct();
-      routeLink_3 = new RouteLink({
-        to: function () {
+      routeLink_3 = _$add(_$state, RouteLink, {
+        to: function() {
           return {
             name: 'list.edit',
-            params: { author: 'robert' }
+
+            params: {
+              author: 'robert'
+            }
           };
         }
-      }, _$state);
-      _$add(_$state, routeLink_3);
+      });
       if (routeLink_3.$slots['default'] && routeLink_3.$slots['default'].childNodes.length !== 0) {
         routeLink_3.$slots['default'] = _$d();
       }
       routeLinkAnchor_4 = _$ct();
-      routeLink_4 = new RouteLink({
-        to: function () {
+      routeLink_4 = _$add(_$state, RouteLink, {
+        to: function() {
           return {
             name: 'list.view',
-            params: { author: 'robert' }
+
+            params: {
+              author: 'robert'
+            }
           };
         }
-      }, _$state);
-      _$add(_$state, routeLink_4);
+      });
       if (routeLink_4.$slots['default'] && routeLink_4.$slots['default'].childNodes.length !== 0) {
         routeLink_4.$slots['default'] = _$d();
       }
       routeLinkAnchor_5 = _$ct();
-      routeLink_5 = new RouteLink({
-        to: function () {
+      routeLink_5 = _$add(_$state, RouteLink, {
+        to: function() {
           return {
             name: 'list.view.details',
+
             params: {
               author: 'robert',
               id: 4
             }
           };
         }
-      }, _$state);
-      _$add(_$state, routeLink_5);
+      });
       if (routeLink_5.$slots['default'] && routeLink_5.$slots['default'].childNodes.length !== 0) {
         routeLink_5.$slots['default'] = _$d();
       }
       routeLinkAnchor_6 = _$ct();
-      routeLink_6 = new RouteLink({
-        to: function () {
-          return { name: 'contact' };
+      routeLink_6 = _$add(_$state, RouteLink, {
+        to: function() {
+          return {
+            name: 'contact'
+          };
         }
-      }, _$state);
-      _$add(_$state, routeLink_6);
+      });
       if (routeLink_6.$slots['default'] && routeLink_6.$slots['default'].childNodes.length !== 0) {
         routeLink_6.$slots['default'] = _$d();
       }
       routeLinkAnchor_7 = _$ct();
-      routeLink_7 = new RouteLink({
-        to: function () {
-          return { name: 'about' };
+      routeLink_7 = _$add(_$state, RouteLink, {
+        to: function() {
+          return {
+            name: 'about'
+          };
         }
-      }, _$state);
-      _$add(_$state, routeLink_7);
+      });
       if (routeLink_7.$slots['default'] && routeLink_7.$slots['default'].childNodes.length !== 0) {
         routeLink_7.$slots['default'] = _$d();
       }
       var RouterView = children['router-view'] || window['RouterView'];
       routerViewAnchor_1 = _$ct();
-      routerView_1 = new RouterView({}, _$state);
-      _$add(_$state, routerView_1);
+      routerView_1 = _$add(_$state, RouterView, {});
       return {
-        $create: function () {
+        $create: function() {
           routeLink_1.$create();
           txt_1 = _$ct('Home ');
           txt_2 = _$ct('| ');
@@ -1659,15 +1685,18 @@
           routeLink_7.$create();
           txt_13 = _$ct('About');
           hr_1 = _$ce('hr');
+          hr_1.innerHTML = '';
           routerView_1.$create();
         },
-        $mount: function (parent, sibling) {
+
+        $mount: function(parent, sibling) {
           this.$unmount();
           _$a(_$(parent), _$frag, _$(sibling));
           this.$siblingEl = _$(sibling);
           this.$parentEl = sibling && _$(sibling).parentElement || _$(parent);
         },
-        $update: function () {
+
+        $update: function() {
           routeLink_1 && routeLink_1.$update();
           routeLink_2 && routeLink_2.$update();
           routeLink_3 && routeLink_3.$update();
@@ -1677,7 +1706,8 @@
           routeLink_7 && routeLink_7.$update();
           routerView_1 && routerView_1.$update();
         },
-        $unmount: function () {
+
+        $unmount: function() {
           _$a(_$frag, routeLinkAnchor_1);
           if (routeLink_1.$slots['default']) {
             _$a(routeLink_1.$slots['default'], txt_1);
@@ -1723,7 +1753,8 @@
           _$a(_$frag, routerViewAnchor_1);
           routerView_1.$mount(_$frag, routerViewAnchor_1);
         },
-        $destroy: function () {
+
+        $destroy: function() {
           this.$unmount();
           this.$parent = null;
           this.$parentEl = null;
@@ -1743,12 +1774,12 @@
       };
     }
     function App(_$attrs, _$parent) {
-      _$CompCtr.call(this, _$attrs, _$tplApp, { router: router }, _$parent);
+      _$CompCtr.call(this, _$attrs, _$tplApp, {
+        router: router
+      }, _$parent);
       !_$parent && this.$create();
     }
-    App.plugin = _$plugin;
-    App.prototype = Object.create(_$CompCtr.prototype);
-    App.prototype.constructor = App;
+    _$extends(App, _$CompCtr);
 
     App.plugin(Router.plugin);
 
