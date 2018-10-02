@@ -1,4 +1,4 @@
-import App from './app.es';
+import App from './app.html';
 import Router from '../../lib/router.esm';
 
 App.plugin(Router.plugin);

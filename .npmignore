@@ -2,6 +2,7 @@
 .eslintrc.json
 .gitignore
 .travis.yml
+build/
 test/
 tsconfig.json
 tslint.json

@@ -1,8 +1,9 @@
 const path = require('path');
+const trebor = require('trebor/plugin');
 const resolve = require('rollup-plugin-node-resolve');
 
 const outputs = [];
-const plugins = [];
+const plugins = [trebor()];
 const ENV = process.env.BUILD;
 
 if (ENV === 'test') {
