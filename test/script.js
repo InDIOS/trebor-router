@@ -1167,7 +1167,7 @@
       bindClass_$node_1 = function(_$state) {
         var _a;
         return ['class', _$bc([
-          _$state.classes,
+          _$state._classes,
           (_a = {}, _a[_$state.activeClass] = _$state._url === _$state._path, _a)
         ]).trim()];
       };
@@ -1571,7 +1571,7 @@
           };
         },
 
-        redirect: '/home'
+        class: 'some-class'
       });
       if (routeLink_1.$slots['default'] && routeLink_1.$slots['default'].childNodes.length !== 0) {
         routeLink_1.$slots['default'] = _$d();
