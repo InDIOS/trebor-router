@@ -1,4 +1,4 @@
-<a $tag="tag" #link @click.prevent="_navigate($event)" :class="[classes, { [activeClass]: _url === _path }]">
+<a $tag="tag" #link @click.prevent="_navigate($event)" :class="[_classes, { [activeClass]: _url === _path }]">
   <slot></slot>
 </a>
 
