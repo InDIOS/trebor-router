@@ -35,17 +35,19 @@ export default class Router {
 		this._root = options.root ? `${clearSlashes(options.root)}/` : '/';
 		this._mode = options.mode === 'history' && !!(history.pushState) ? 'history' : 'hash';
 
-		this._routes = options.routes.reduce((routes, { path }, i) => {
-			let modifier = options.ignoreCase ? 'i' : '';
-			let route = toInternalRoute(options.routes[i], modifier);
+		this._routes = options.routes.reduce((routes, route) => {
+      let { path } = route;
+      let modifier = options.ignoreCase ? 'i' : '';
+			let _route = toInternalRoute(route, modifier);
 			if (typeof path === 'string' && (path === '' || path === '/')) {
-				this._default = route;
+				this._default = _route;
 			} else if (!path) {
-				this._notFound = route;
+        this._notFound = _route;
+        return routes;
 			} else {
-				routes.push(route);
-				toPlainRoutes(this, route, routes, modifier);
+				routes.push(_route);
 			}
+      toPlainRoutes(this, _route, routes, modifier);
 			return routes;
 		}, <InternalRoute[]>[]);
 
