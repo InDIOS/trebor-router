@@ -1,53 +1,72 @@
-<a $tag="tag" #link @click.prevent="_navigate($event)" :class="[_classes, { [activeClass]: _url === _path }]">
-  <slot></slot>
+<a $tag="tag" #link @click.prevent="_navigate($event)" :class="[_classes, { [activeClass]: _active && parentActive == 'null' }]">
+	<slot></slot>
 </a>
 
 <script>
 	import { navigate, generateUrl } from './tools';
-	
-  export default {
-    attrs: {
-      to: {
-        required: true,
-        type: 'string | object'
-      },
-      tag: {
-        default: 'a',
-        type: 'string'
-      },
-      class: {
-        default: '',
-        type: 'string'
-      },
-      activeClass: {
-        type: 'string',
-        default: 'link-active'
-      }
-    },
-    afterMount() {
-      this._updateURL();
-      this._classes = this.class;
-      this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
-      if (this.tag === 'a') {
-        let { link } = this.$refs;
-        link.setAttribute('href', this._path);
-      }
-      this.$router.onUrlChange(() => {
-        this._updateURL();
-      });
-      this.$update();
-    },
-    model: {
-      _url: '',
-      _path: '',
-      _classes: '',
-      _navigate(e) {
-        navigate(this.$router, this._path);
-        this.$fire('click', e);
-      },
-      _updateURL() {
-        this._url = this.$router.url;
-      }
-    }
-  };
+
+	export default {
+		attrs: {
+			to: {
+				required: true,
+				type: 'string | object'
+			},
+			tag: {
+				default: 'a',
+				type: 'string'
+			},
+			class: {
+				default: '',
+				type: 'string'
+			},
+			activeClass: {
+				type: 'string',
+				default: 'link-active'
+			},
+			parentActive: {
+				type: 'string',
+				default: 'null'
+			}
+		},
+		afterMount() {
+			this._updateURL();
+			this._classes = this.class;
+			this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
+			if (this.tag === 'a') {
+				this.$refs.link.setAttribute('href', this._path);
+			}
+			this.$router.onUrlChange(() => {
+				this._updateURL();
+				this.$update();
+			});
+			this.$update();
+		},
+		afterUpdate() {
+			if (this.parentActive !== 'null') {
+				let parent = !this.parentActive ? this.$refs.link.parentElement : _$(this.parentActive);
+				if (parent) {
+					if (this._active) {
+						parent.classList.add(this.activeClass);
+					} else {
+						parent.classList.remove(this.activeClass);
+					}
+				}
+			}
+		},
+		model: {
+			_url: '',
+			_path: '',
+			_classes: '',
+			get _active() {
+				return this._url === this._path;
+			},
+			_navigate(e) {
+				navigate(this.$router, this._path);
+				this.$fire('click', e);
+			},
+			_updateURL() {
+				this._url = this.$router.url;
+			}
+		}
+	};
 </script>
