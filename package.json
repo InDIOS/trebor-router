@@ -1,25 +1,25 @@
 {
  "name": "trebor-router",
- "version": "0.1.1",
+ "version": "0.1.2",
  "description": "The Official router library for TreborJS",
  "main": "lib/router.esm.js",
  "scripts": {
   "compile": "tsc -p .",
   "build:comp": "trebor -i route-link.html -o ./build -f es && trebor -i router-view.html -o ./build -f es",
   "build:prod": "rollup -c rollup.config.js --environment BUILD:prod",
-  "build:test": "npm run build:prod && rollup -c rollup.config.js --environment BUILD:test"
+  "build:test": "npm run build:comp && npm run build:prod && rollup -c rollup.config.js --environment BUILD:test"
  },
  "engines": {
   "node": ">=4"
  },
  "peerDependencies": {
-	 "trebor": "^0.2.0"
+	 "trebor": "^0.2.2"
  },
  "devDependencies": {
   "rollup": "^0.64.1",
   "rollup-plugin-node-resolve": "^3.3.0",
   "typescript": "^3.0.1",
-  "trebor": "^0.2.0"
+  "trebor": "^0.2.2"
  },
  "keywords": [],
  "author": "InDIOS",

@@ -92,8 +92,10 @@ export function toPlainRoutes(router: Router, route: InternalRoute, routes: Inte
       next && next();
     };
     children.forEach(child => {
-      if (child.name && route.name) child.name = [route.name, child.name].join('.');
-      if (typeof child.path === 'string') child.path = [route._path, child.path.replace(/^\//, '')].join('/');
+      if (child.name && route.name) child.name = `${route.name}.${child.name}`;
+      if (typeof child.path === 'string') {
+        child.path = `${clearSlashes(route._path)}/${child.path.replace(/^\//, '')}`;
+      }
       let subRoute = toInternalRoute(child, modifier);
       routes.push(subRoute);
       subRoute._root = route;
@@ -152,6 +154,7 @@ export function buildRoute(router: Router, path: string | null): RouteInstance {
     router,
     query: {},
     state: {},
+    name: null,
     params: {},
     go(path: string | number | NavigateParam) {
       switch (typeof path) {

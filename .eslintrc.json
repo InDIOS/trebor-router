@@ -13,6 +13,7 @@
 		"sourceType": "module"
   },
   "globals": {
+    "_$": true,
     "_$d": true
   },
   "plugins": [

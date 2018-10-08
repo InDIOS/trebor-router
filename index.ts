@@ -35,17 +35,19 @@ export default class Router {
 		this._root = options.root ? `${clearSlashes(options.root)}/` : '/';
 		this._mode = options.mode === 'history' && !!(history.pushState) ? 'history' : 'hash';
 
-		this._routes = options.routes.reduce((routes, { path }, i) => {
-			let modifier = options.ignoreCase ? 'i' : '';
-			let route = toInternalRoute(options.routes[i], modifier);
+		this._routes = options.routes.reduce((routes, route) => {
+      let { path } = route;
+      let modifier = options.ignoreCase ? 'i' : '';
+			let _route = toInternalRoute(route, modifier);
 			if (typeof path === 'string' && (path === '' || path === '/')) {
-				this._default = route;
+				this._default = _route;
 			} else if (!path) {
-				this._notFound = route;
+        this._notFound = _route;
+        return routes;
 			} else {
-				routes.push(route);
-				toPlainRoutes(this, route, routes, modifier);
+				routes.push(_route);
 			}
+      toPlainRoutes(this, _route, routes, modifier);
 			return routes;
 		}, <InternalRoute[]>[]);
 
@@ -66,9 +68,10 @@ export default class Router {
 		return clearSlashes(url) || root;
 	}
 
-	private _buildRouteObject(url: string, params: ObjectLike<string>, state: ObjectLike<any>) {
+	private _buildRouteObject(url: string, name: string, params: ObjectLike<string>, state: ObjectLike<any>) {
 		if (url == null) throw new Error('Unable to compile request object');
 		let route = buildRoute(this, url);
+		if (name) route.name = name;
 		if (state) route.state = state;
 		if (params) route.params = params;
 		let completeFragment = url.split('?');
@@ -108,7 +111,7 @@ export default class Router {
 				params[_params[i]] = match[i + 1];
 			}
 
-			let to = this._buildRouteObject(url, params, route.state);
+      let to = this._buildRouteObject(url, route.name, params, route.state);
 			let ins: RouteTransition = { to };
 			const prev = this._prev;
 

@@ -106,7 +106,7 @@
         for (var key in data) {
             _loop_1(key);
         }
-        var tpl = template(self, opts.children);
+        var tpl = template(self);
         _$e(tpl, function (value, key) {
             _$def(self, key, {
                 value: (function (key) {
@@ -486,6 +486,9 @@
         if (text.data !== (value = _$toStr(value)))
             text.data = value;
     }
+    function _$nu(node, tag) {
+        return tag.toUpperCase() !== node.tagName ? _$as(node, _$ce(tag)) : node;
+    }
     function _$e(obj, cb) {
         for (var key in obj) {
             if (_$hasProp(obj, key)) {
@@ -494,7 +497,8 @@
         }
     }
 
-    function _$tplList(_$state, children) {
+    function _$tplList(_$state) {
+      var children = _$state.$options.children;
       var _$frag, h1_1, p_1, txt_1, strong_1, txt_2, setTxt_2, routerViewAnchor_1, routerView_1;
       _$frag = _$d();
       setTxt_2 = function(_$state) {
@@ -555,7 +559,8 @@
     }
     _$extends(List, _$CompCtr);
 
-    function _$tplPage(_$state, children) {
+    function _$tplPage(_$state) {
+      var children = _$state.$options.children;
       var _$frag, h1_1, txt_1, setTxt_1, p_1, txt_2, strong_1, txt_3, setTxt_3, routerViewAnchor_1, routerView_1, span_1, txt_4;
       _$frag = _$d();
       setTxt_1 = function() {
@@ -1032,9 +1037,10 @@
             };
             children.forEach(function (child) {
                 if (child.name && route.name)
-                    child.name = [route.name, child.name].join('.');
-                if (typeof child.path === 'string')
-                    child.path = [route._path, child.path.replace(/^\//, '')].join('/');
+                    child.name = route.name + "." + child.name;
+                if (typeof child.path === 'string') {
+                    child.path = clearSlashes(route._path) + "/" + child.path.replace(/^\//, '');
+                }
                 var subRoute = toInternalRoute(child, modifier);
                 routes.push(subRoute);
                 subRoute._root = route;
@@ -1089,6 +1095,7 @@
             router: router,
             query: {},
             state: {},
+            name: null,
             params: {},
             go: function (path) {
                 switch (typeof path) {
@@ -1167,8 +1174,8 @@
       bindClass_$node_1 = function(_$state) {
         var _a;
         return ['class', _$bc([
-          _$state.classes,
-          (_a = {}, _a[_$state.activeClass] = _$state._url === _$state._path, _a)
+          _$state._classes,
+          (_a = {}, _a[_$state.activeClass] = _$state._active && _$state.parentActive == 'null', _a)
         ]).trim()];
       };
       return {
@@ -1191,11 +1198,7 @@
         },
 
         $update: function(_$state) {
-          var updateTag_$node_1 = setTag_$node_1(_$state);
-          if (updateTag_$node_1.toUpperCase() !== _$node_1.tagName) {
-            _$node_1 = _$as(_$node_1, _$ce(updateTag_$node_1));
-          }
-          updateTag_$node_1 = void 0;
+          _$node_1 = _$nu(_$node_1, setTag_$node_1(_$state));
           handlerClickEvent_1 = _$ul(_$node_1, 'click', handlerClickEvent_1, function(event) {
             event.preventDefault();
             clickEvent_1(_$state, event, _$node_1);
@@ -1247,22 +1250,41 @@
           activeClass: {
             type: 'string',
             default: 'link-active'
+          },
+
+          parentActive: {
+            type: 'string',
+            default: 'null'
           }
         },
 
         afterMount: function() {
           var _this = this;
+          this._updateURL();
           this._classes = this.class;
-          this._url = this.$router.url;
           this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
           if (this.tag === 'a') {
-            var link = this.$refs.link;
-            link.setAttribute('href', this._path);
+            this.$refs.link.setAttribute('href', this._path);
           }
           this.$router.onUrlChange(function() {
-            _this.$set('_url', _this.$router.url);
+            _this._updateURL();
+            _this.$update();
           });
           this.$update();
+          console.log(this.parentActive, this._path);
+        },
+
+        afterUpdate: function() {
+          if (this.parentActive !== 'null') {
+            var parent = !this.parentActive ? this.$refs.link.parentElement : _$(this.parentActive);
+            if (parent) {
+              if (this._active) {
+                parent.classList.add(this.activeClass);
+              } else {
+                parent.classList.remove(this.activeClass);
+              }
+            }
+          }
         },
 
         model: {
@@ -1270,9 +1292,17 @@
           _path: '',
           _classes: '',
 
+          get _active() {
+            return this._url === this._path;
+          },
+
           _navigate: function(e) {
             navigate(this.$router, this._path);
             this.$fire('click', e);
+          },
+
+          _updateURL: function() {
+            this._url = this.$router.url;
           }
         }
       }, _$parent);
@@ -1295,20 +1325,21 @@
             this._listener = function () { _this._onLocationChange(); };
             this._root = options.root ? clearSlashes(options.root) + "/" : '/';
             this._mode = options.mode === 'history' && !!(history.pushState) ? 'history' : 'hash';
-            this._routes = options.routes.reduce(function (routes, _a, i) {
-                var path = _a.path;
+            this._routes = options.routes.reduce(function (routes, route) {
+                var path = route.path;
                 var modifier = options.ignoreCase ? 'i' : '';
-                var route = toInternalRoute(options.routes[i], modifier);
+                var _route = toInternalRoute(route, modifier);
                 if (typeof path === 'string' && (path === '' || path === '/')) {
-                    _this._default = route;
+                    _this._default = _route;
                 }
                 else if (!path) {
-                    _this._notFound = route;
+                    _this._notFound = _route;
+                    return routes;
                 }
                 else {
-                    routes.push(route);
-                    toPlainRoutes(_this, route, routes, modifier);
+                    routes.push(_route);
                 }
+                toPlainRoutes(_this, _route, routes, modifier);
                 return routes;
             }, []);
             this._listen();
@@ -1327,10 +1358,12 @@
             }
             return clearSlashes(url) || root;
         };
-        Router.prototype._buildRouteObject = function (url, params, state) {
+        Router.prototype._buildRouteObject = function (url, name, params, state) {
             if (url == null)
                 throw new Error('Unable to compile request object');
             var route = buildRoute(this, url);
+            if (name)
+                route.name = name;
             if (state)
                 route.state = state;
             if (params)
@@ -1370,7 +1403,7 @@
                 for (var i = 0; i < _params.length; i++) {
                     params[_params[i]] = match[i + 1];
                 }
-                var to_1 = this._buildRouteObject(url, params, route.state);
+                var to_1 = this._buildRouteObject(url, route.name, params, route.state);
                 var ins_1 = { to: to_1 };
                 var prev_1 = this._prev;
                 if (prev_1) {
@@ -1559,7 +1592,8 @@
       '/': { name: 'home' }
     });
 
-    function _$tplApp(_$state, children) {
+    function _$tplApp(_$state) {
+      var children = _$state.$options.children;
       var _$frag, routeLinkAnchor_1, routeLink_1, txt_1, txt_2, routeLinkAnchor_2, routeLink_2, txt_3, txt_4, routeLinkAnchor_3, routeLink_3, txt_5, txt_6, routeLinkAnchor_4, routeLink_4, txt_7, txt_8, routeLinkAnchor_5, routeLink_5, txt_9, txt_10, routeLinkAnchor_6, routeLink_6, txt_11, txt_12, routeLinkAnchor_7, routeLink_7, txt_13, hr_1, routerViewAnchor_1, routerView_1;
       _$frag = _$d();
       var RouteLink = children['route-link'] || window['RouteLink'];
@@ -1571,7 +1605,8 @@
           };
         },
 
-        redirect: '/home'
+        class: 'some-class',
+        parentActive: ''
       });
       if (routeLink_1.$slots['default'] && routeLink_1.$slots['default'].childNodes.length !== 0) {
         routeLink_1.$slots['default'] = _$d();
