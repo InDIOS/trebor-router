@@ -3,7 +3,8 @@
 </a>
 
 <script>
-  import { navigate, generateUrl } from './tools';
+	import { navigate, generateUrl } from './tools';
+	
   export default {
     attrs: {
       to: {
@@ -24,15 +25,15 @@
       }
     },
     afterMount() {
+      this._updateURL();
       this._classes = this.class;
-      this._url = this.$router.url;
       this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
       if (this.tag === 'a') {
         let { link } = this.$refs;
         link.setAttribute('href', this._path);
       }
       this.$router.onUrlChange(() => {
-        this.$set('_url', this.$router.url);
+        this._updateURL();
       });
       this.$update();
     },
@@ -43,6 +44,9 @@
       _navigate(e) {
         navigate(this.$router, this._path);
         this.$fire('click', e);
+      },
+      _updateURL() {
+        this._url = this.$router.url;
       }
     }
   };
