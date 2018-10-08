@@ -61,6 +61,10 @@ export interface RouteInstance {
    */
 	router: Router;
   /**
+   * The name of route
+   */
+	name: string | null;
+  /**
    * The url of route
    */
 	path: string | null;

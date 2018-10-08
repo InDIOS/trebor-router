@@ -66,9 +66,10 @@ export default class Router {
 		return clearSlashes(url) || root;
 	}
 
-	private _buildRouteObject(url: string, params: ObjectLike<string>, state: ObjectLike<any>) {
+	private _buildRouteObject(url: string, name: string, params: ObjectLike<string>, state: ObjectLike<any>) {
 		if (url == null) throw new Error('Unable to compile request object');
 		let route = buildRoute(this, url);
+		if (name) route.name = name;
 		if (state) route.state = state;
 		if (params) route.params = params;
 		let completeFragment = url.split('?');
@@ -108,7 +109,7 @@ export default class Router {
 				params[_params[i]] = match[i + 1];
 			}
 
-			let to = this._buildRouteObject(url, params, route.state);
+      let to = this._buildRouteObject(url, route.name, params, route.state);
 			let ins: RouteTransition = { to };
 			const prev = this._prev;
 
