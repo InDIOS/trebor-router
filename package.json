@@ -1,6 +1,6 @@
 {
  "name": "trebor-router",
- "version": "0.1.2",
+ "version": "0.1.3",
  "description": "The Official router library for TreborJS",
  "main": "lib/router.esm.js",
  "scripts": {
