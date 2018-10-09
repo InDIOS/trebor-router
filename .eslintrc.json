@@ -14,7 +14,9 @@
   },
   "globals": {
     "_$": true,
-    "_$d": true
+    "_$d": true,
+		"_$sa": true,
+		"_$isStr": true
   },
   "plugins": [
     "html"
