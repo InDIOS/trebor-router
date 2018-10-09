@@ -31,10 +31,8 @@
 		afterMount() {
 			this._updateURL();
 			this._classes = this.class;
-			this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
-			if (this.tag === 'a') {
-				this.$refs.link.setAttribute('href', this._path);
-			}
+			this._path = _$isStr(this.to) ? this.to : generateUrl(this.$router, this.to);
+			if (this.tag === 'a') _$sa(this.$refs.link, ['href', this._path]);
 			this.$router.onUrlChange(() => {
 				this._updateURL();
 				this.$update();

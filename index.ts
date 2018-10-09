@@ -36,18 +36,18 @@ export default class Router {
 		this._mode = options.mode === 'history' && !!(history.pushState) ? 'history' : 'hash';
 
 		this._routes = options.routes.reduce((routes, route) => {
-      let { path } = route;
-      let modifier = options.ignoreCase ? 'i' : '';
+			let { path } = route;
+			let modifier = options.ignoreCase ? 'i' : '';
 			let _route = toInternalRoute(route, modifier);
 			if (typeof path === 'string' && (path === '' || path === '/')) {
 				this._default = _route;
 			} else if (!path) {
-        this._notFound = _route;
-        return routes;
+				this._notFound = _route;
+				return routes;
 			} else {
 				routes.push(_route);
 			}
-      toPlainRoutes(this, _route, routes, modifier);
+			toPlainRoutes(this, _route, routes, modifier);
 			return routes;
 		}, <InternalRoute[]>[]);
 
@@ -111,7 +111,7 @@ export default class Router {
 				params[_params[i]] = match[i + 1];
 			}
 
-      let to = this._buildRouteObject(url, route.name, params, route.state);
+			let to = this._buildRouteObject(url, route.name, params, route.state);
 			let ins: RouteTransition = { to };
 			const prev = this._prev;
 
@@ -236,7 +236,7 @@ export default class Router {
 				}
 			}
 			this._fallowRoute(url, indexes)(this._component);
-			this._onChange.forEach(l => { l(); });
+			this._onChange.forEach(listener => { try { listener(); } catch { } });
 		}
 	}
 

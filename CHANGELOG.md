@@ -1,3 +1,7 @@
+0.1.3
+- Optimized link component code.
+- Fixed throwing undefined internal issues.
+
 0.1.2
 - Fixed some internal issues.
 - Fixed class link attribute behavior.
