@@ -1,3 +1,7 @@
+0.1.4
+- Fixed missing global helper.
+- Updated dependencies to latest version.
+
 0.1.3
 - Optimized link component code.
 - Fixed throwing undefined internal issues.

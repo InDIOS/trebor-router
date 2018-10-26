@@ -16,7 +16,7 @@
     "_$": true,
     "_$d": true,
 		"_$sa": true,
-		"_$isStr": true
+		"_$isType": true
   },
   "plugins": [
     "html"

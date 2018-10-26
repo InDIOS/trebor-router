@@ -366,13 +366,16 @@
         });
         return _$isObject(obj) ? data : obj;
     }
-    function _$setRef(obj, prop) {
-        var value = [];
-        _$def(obj, prop, {
-            get: function () { return value.length <= 1 ? value[0] : value; },
-            set: function (val) { val && !~value.indexOf(val) && value.push(val); },
-            enumerable: true, configurable: true
-        });
+    function _$setRef(refs, prop, node) {
+        if (!_$hasProp(refs, prop)) {
+            var value_1 = [];
+            _$def(refs, prop, {
+                get: function () { return value_1.length <= 1 ? value_1[0] : value_1; },
+                set: function (val) { val && !~value_1.indexOf(val) && value_1.push(val); },
+                enumerable: true, configurable: true
+            });
+        }
+        refs[prop] = node;
     }
     function _$accesor(object, path, value) {
         return path.split('.').reduce(function (obj, key, i, arr) {
@@ -432,8 +435,8 @@
     function _$ct(content) {
         return document.createTextNode(content || '');
     }
-    function _$sa(el, attrOrBind) {
-        var attr = attrOrBind[0], value = attrOrBind[1];
+    function _$sa(el, attrAndValue) {
+        var attr = attrAndValue[0], value = attrAndValue[1];
         el.setAttribute(attr, _$toStr(value));
         if (_$isValueAttr(attr) && !_$isStr(value))
             el[PROP_MAP._] = value;
@@ -472,11 +475,11 @@
     }
     function _$bu(el, binding) {
         var attr = binding[0], value = binding[1];
-        var _value = attr === 'checked' ? !!value : _$toStr(value);
-        if (/value|checked/.test(attr)) {
+        var _value = _$toStr(value);
+        if (_$isValueAttr(attr)) {
             if (el[attr] !== _value)
-                el[attr] = _$isValueAttr(attr) ? _value : value;
-            el[PROP_MAP._] = _$isValueAttr(attr) ? value : el[PROP_MAP.v];
+                el[attr] = _value;
+            el[PROP_MAP._] = value;
         }
         else if (_$ga(el, attr) !== _value) {
             _$sa(el, [attr, _value]);
@@ -489,10 +492,15 @@
     function _$nu(node, tag) {
         return tag.toUpperCase() !== node.tagName ? _$as(node, _$ce(tag)) : node;
     }
+    function _$rr(refs, prop, node) {
+        var nodes = refs[prop];
+        _$isArray(nodes) ? refs[prop].splice(nodes.indexOf(node), 1) : (delete refs[prop]);
+    }
     function _$e(obj, cb) {
+        var i = 0;
         for (var key in obj) {
             if (_$hasProp(obj, key)) {
-                cb(obj[key], (isNaN(+key) ? key : +key));
+                cb(obj[key], (isNaN(+key) ? key : +key), i++);
             }
         }
     }
@@ -1111,11 +1119,11 @@
                         break;
                 }
             },
-            back: function (distance) {
-                history && history.back(distance);
+            back: function () {
+                history && history.go(-1);
             },
-            forward: function (distance) {
-                history && history.forward(distance);
+            forward: function () {
+                history && history.go(1);
             },
             get: function (key, default_value) {
                 return (this.params && this.params[key] !== undefined) ?
@@ -1181,8 +1189,7 @@
       return {
         $create: function() {
           _$node_1 = _$ce(setTag_$node_1(_$state));
-          !_refs['link'] && _$setRef(_refs, 'link');
-          _refs['link'] = _$node_1;
+          _$setRef(_refs, 'link', _$node_1);
           _$al(_$node_1, 'click', handlerClickEvent_1 = function(event) {
             event.preventDefault();
             clickEvent_1(_$state, event, _$node_1);
@@ -1217,12 +1224,7 @@
           this.$parentEl = null;
           this.$siblingEl = null;
           this.$children.splice(0, this.$children.length);
-          if (_$isType(_refs['link'], 'array')) {
-            var index_$node_1 = _refs['link'].indexOf(_$node_1);
-            _refs['link'].splice(index_$node_1, 1);
-          } else {
-            delete _refs['link'];
-          }
+          _$rr(_refs, 'link', _$node_1);
           _$rl(_$node_1, 'click', handlerClickEvent_1);
           delete _$state.$root;
           _$frag = _$node_1 = setTag_$node_1 = _refs = clickEvent_1 = handlerClickEvent_1 = bindClass_$node_1 = void 0;
@@ -1262,16 +1264,14 @@
           var _this = this;
           this._updateURL();
           this._classes = this.class;
-          this._path = typeof this.to === 'string' ? this.to : generateUrl(this.$router, this.to);
-          if (this.tag === 'a') {
-            this.$refs.link.setAttribute('href', this._path);
-          }
+          this._path = _$isType(this.to, 'string') ? this.to : generateUrl(this.$router, this.to);
+          if (this.tag === 'a')
+            _$sa(this.$refs.link, ['href', this._path]);
           this.$router.onUrlChange(function() {
             _this._updateURL();
             _this.$update();
           });
           this.$update();
-          console.log(this.parentActive, this._path);
         },
 
         afterUpdate: function() {
@@ -1297,8 +1297,8 @@
           },
 
           _navigate: function(e) {
-            navigate(this.$router, this._path);
             this.$fire('click', e);
+            navigate(this.$router, this._path);
           },
 
           _updateURL: function() {
@@ -1535,7 +1535,10 @@
                     }
                 }
                 this._fallowRoute(url, indexes)(this._component);
-                this._onChange.forEach(function (l) { l(); });
+                this._onChange.forEach(function (listener) { try {
+                    listener();
+                }
+                catch (_a) { } });
             }
         };
         Router.prototype.beforeEach = function (handler) {
