@@ -170,11 +170,11 @@ export function buildRoute(router: Router, path: string | null): RouteInstance {
           break;
       }
     },
-    back(distance?: number) {
-      history && history.back(distance);
+    back() {
+      history && history.go(-1);
     },
-    forward(distance?: number) {
-      history && history.forward(distance);
+    forward() {
+      history && history.go(1);
     },
     get(key: string, default_value?: any): string {
       return (this.params && this.params[key] !== undefined) ?

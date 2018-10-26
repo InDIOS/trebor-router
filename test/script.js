@@ -1119,11 +1119,11 @@
                         break;
                 }
             },
-            back: function (distance) {
-                history && history.back(distance);
+            back: function () {
+                history && history.go(-1);
             },
-            forward: function (distance) {
-                history && history.forward(distance);
+            forward: function () {
+                history && history.go(1);
             },
             get: function (key, default_value) {
                 return (this.params && this.params[key] !== undefined) ?

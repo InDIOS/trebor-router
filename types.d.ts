@@ -95,11 +95,11 @@ export interface RouteInstance {
   /**
    * Navigate to previous path
    */
-	back(distance?: number): void;
+	back(): void;
   /**
    * Navigate to next path
    */
-	forward(distance?: number): void;
+	forward(): void;
 }
 
 declare module "*.esm" {
