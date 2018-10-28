@@ -4,7 +4,7 @@ import RouteLink from './route-link.es';
 import RouterView from './router-view.es';
 import {
 	buildRoute, manageHooks, toPlainRoutes, pathToRegExp, generateUrl,
-	getHashRegExp, clearSlashes, toInternalRoute, navigate, callLeave
+	getHashRegExp, clearSlashes, toInternalRoute, navigate, callLeave, goToPath
 } from './tools';
 import { Component, InternalRoute, RouteTransition, RouterOptions, ObjectLike, NavigateParam } from './types';
 
@@ -207,7 +207,11 @@ export default class Router {
 				};
 			}
 		}
-	}
+  }
+  
+  go(path: string | number | NavigateParam) {
+    goToPath(this, path);
+  }
 
 	onUrlChange(listener: () => void) {
 		this._onChange.push(listener);

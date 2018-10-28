@@ -280,6 +280,13 @@
     function _$isType(value, type) {
         return _$type(type) === 'string' ? type.split('|').some(function (t) { return t.trim() === _$type(value); }) : value instanceof type;
     }
+    function _$dc(component) {
+        component.$unmount();
+        component.$parent = null;
+        component.$parentEl = null;
+        component.$siblingEl = null;
+        component.$children.splice(0, component.$children.length);
+    }
     function _$isObject(obj) {
         return _$isType(obj, 'object');
     }
@@ -550,11 +557,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           routerView_1 && routerView_1.$destroy();
           delete _$state.$root;
           _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = routerViewAnchor_1 = routerView_1 = void 0;
@@ -627,11 +630,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           routerView_1 && routerView_1.$destroy();
           delete _$state.$root;
           _$frag = h1_1 = txt_1 = setTxt_1 = p_1 = txt_2 = strong_1 = txt_3 = setTxt_3 = routerViewAnchor_1 = routerView_1 = span_1 = txt_4 = void 0;
@@ -683,11 +682,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           delete _$state.$root;
           _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
@@ -736,11 +731,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           delete _$state.$root;
           _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
@@ -789,11 +780,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           delete _$state.$root;
           _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
@@ -842,11 +829,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           delete _$state.$root;
           _$frag = h1_1 = p_1 = txt_1 = strong_1 = txt_2 = setTxt_2 = void 0;
         }
@@ -894,11 +877,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           _$rl(button_1, 'click', handlerClickEvent_1);
           delete _$state.$root;
           _$frag = h1_1 = p_1 = button_1 = txt_1 = clickEvent_1 = handlerClickEvent_1 = void 0;
@@ -932,11 +911,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           delete _$state.$root;
           _$frag = void 0;
         }
@@ -1096,6 +1071,20 @@
         }
         handler();
     }
+    function goToPath(router, path) {
+        switch (typeof path) {
+            case 'number':
+                history && history.go(path);
+                break;
+            case 'object':
+                var _a = path, name_1 = _a.name, params = _a.params, query = _a.query;
+                navigate(router, generateUrl(router, { name: name_1, params: params, query: query }));
+                break;
+            default:
+                navigate(router, path);
+                break;
+        }
+    }
     function buildRoute(router, path) {
         path = path || '/';
         return {
@@ -1106,18 +1095,7 @@
             name: null,
             params: {},
             go: function (path) {
-                switch (typeof path) {
-                    case 'number':
-                        history && history.go(path);
-                        break;
-                    case 'object':
-                        var _a = path, name_1 = _a.name, params = _a.params, query = _a.query;
-                        navigate(router, generateUrl(router, { name: name_1, params: params, query: query }));
-                        break;
-                    default:
-                        navigate(router, path);
-                        break;
-                }
+                goToPath(router, path);
             },
             back: function () {
                 history && history.go(-1);
@@ -1219,11 +1197,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           _$rr(_refs, 'link', _$node_1);
           _$rl(_$node_1, 'click', handlerClickEvent_1);
           delete _$state.$root;
@@ -1510,6 +1484,9 @@
                 }
             }
         };
+        Router.prototype.go = function (path) {
+            goToPath(this, path);
+        };
         Router.prototype.onUrlChange = function (listener) {
             this._onChange.push(listener);
         };
@@ -1793,11 +1770,7 @@
         },
 
         $destroy: function() {
-          this.$unmount();
-          this.$parent = null;
-          this.$parentEl = null;
-          this.$siblingEl = null;
-          this.$children.splice(0, this.$children.length);
+          _$dc(this);
           routeLink_1 && routeLink_1.$destroy();
           routeLink_2 && routeLink_2.$destroy();
           routeLink_3 && routeLink_3.$destroy();

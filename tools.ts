@@ -147,6 +147,21 @@ export function manageHooks(handler: () => void, route: RouteTransition, hooks?:
   handler();
 }
 
+export function goToPath(router: Router, path: string | number | NavigateParam) {
+  switch (typeof path) {
+    case 'number':
+      history && history.go(path);
+      break;
+    case 'object':
+      let { name, params, query } = <NavigateParam>path;
+      navigate(router, generateUrl(router, { name, params, query }));
+      break;
+    default:
+      navigate(router, <string>path);
+      break;
+  }
+}
+
 export function buildRoute(router: Router, path: string | null): RouteInstance {
   path = path || '/';
   return {
@@ -157,18 +172,7 @@ export function buildRoute(router: Router, path: string | null): RouteInstance {
     name: null,
     params: {},
     go(path: string | number | NavigateParam) {
-      switch (typeof path) {
-        case 'number':
-          history && history.go(path);
-          break;
-        case 'object':
-          let { name, params, query } = <NavigateParam>path;
-          navigate(router, generateUrl(router, { name, params, query }));
-          break;
-        default:
-          navigate(router, <string>path);
-          break;
-      }
+      goToPath(router, path);
     },
     back() {
       history && history.go(-1);
