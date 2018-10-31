@@ -1,3 +1,7 @@
+0.1.5
+- Added navigation ability to router instance.
+- Migrated to use trebor-tools module.
+
 0.1.4
 - Fixed missing global helper.
 - Updated dependencies to latest version.
