@@ -8,9 +8,9 @@
         default: 'default'
       }
     },
-    beforeUnmount() {
+    willUnmount() {
       if (this.$slots.default.hasChildNodes() && this.$parent.$hasNext) {
-        this.$slots.default = _$d();
+        this.$slots.default = _$docFragment();
       }
     }
   };

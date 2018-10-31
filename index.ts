@@ -184,25 +184,25 @@ export default class Router {
 			Object.defineProperty(Ctor.prototype, '$router', {
 				get: () => router, enumerable: true, configurable: true
 			});
-			if ($options.afterMount) {
-				let { afterMount } = $options;
-				$options.afterMount = function (this: Component) {
-					afterMount.call(this);
+			if ($options.didMount) {
+				let { didMount } = $options;
+				$options.didMount = function (this: Component) {
+					didMount.call(this);
 					navigate(this.$router);
 				};
 			} else {
-				$options.afterMount = function (this: Component) {
+				$options.didMount = function (this: Component) {
 					navigate(this.$router);
 				};
 			}
-			if ($options.afterDestroy) {
-				let { afterDestroy } = $options;
-				$options.afterDestroy = function (this: Component) {
-					afterDestroy.call(this);
+			if ($options.didDestroy) {
+				let { didDestroy } = $options;
+				$options.didDestroy = function (this: Component) {
+					didDestroy.call(this);
 					this.$router.destroy();
 				};
 			} else {
-				$options.afterDestroy = function (this: Component) {
+				$options.didDestroy = function (this: Component) {
 					this.$router.destroy();
 				};
 			}

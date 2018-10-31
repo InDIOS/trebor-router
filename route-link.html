@@ -28,20 +28,20 @@
 				default: 'null'
 			}
 		},
-		afterMount() {
+		didMount() {
 			this._updateURL();
 			this._classes = this.class;
 			this._path = _$isType(this.to, 'string') ? this.to : generateUrl(this.$router, this.to);
-			if (this.tag === 'a') _$sa(this.$refs.link, ['href', this._path]);
+			if (this.tag === 'a') _$setAttr(this.$refs.link, ['href', this._path]);
 			this.$router.onUrlChange(() => {
 				this._updateURL();
 				this.$update();
 			});
 			this.$update();
 		},
-		afterUpdate() {
+		didUpdate() {
 			if (this.parentActive !== 'null') {
-				let parent = !this.parentActive ? this.$refs.link.parentElement : _$(this.parentActive);
+				let parent = !this.parentActive ? this.$refs.link.parentElement : _$select(this.parentActive);
 				if (parent) {
 					if (this._active) {
 						parent.classList.add(this.activeClass);

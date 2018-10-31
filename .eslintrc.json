@@ -13,10 +13,10 @@
 		"sourceType": "module"
   },
   "globals": {
-    "_$": true,
-    "_$d": true,
-		"_$sa": true,
-		"_$isType": true
+    "_$select": true,
+		"_$isType": true,
+		"_$setAttr": true,
+    "_$docFragment": true
   },
   "plugins": [
     "html"
